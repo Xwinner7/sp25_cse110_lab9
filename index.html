@@ -205,7 +205,10 @@
         case "Console Assert":
           btn.addEventListener('click', () => {
             const output = document.querySelector("output").textContent;
-            console.assert(output === "", "Assertion failed: Output should be empty", output);
+            console.assert(false, "Assertion always shown - Output: '%s'", output);
+            if (window.TrackJS) {
+            TrackJS.track(`Assertion Check - Output: "${output}"`);
+            }
           });
           break;
         case "Console Clear":
