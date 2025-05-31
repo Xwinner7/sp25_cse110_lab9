@@ -47,6 +47,14 @@
       width: 122px;
     }
   </style>
+
+  <script src="https://cdn.trackjs.com/agent/v3/latest/t.js"></script>
+  <script>
+    window.TrackJS && TrackJS.install({ 
+      token: "ad052fcad6534d8e9ce2cf2ed5349c09",
+      application: "sp25_cse110_lab9"
+    });
+  </script>
 </head>
 
 <body>
@@ -88,20 +96,207 @@
   </main>
 
   <script>
+    class CalculationError extends Error {
+      constructor(message, code) {
+        super(message);
+        this.name = "CalculationError";
+        this.code = code;
+      }
+    }
+
     let form = document.querySelector('form');
     form.addEventListener('submit', e => {
       e.preventDefault();
       let output = document.querySelector('output');
-      let firstNum = document.querySelector('#first-num').value;
-      let secondNum = document.querySelector('#second-num').value;
-      let operator = document.querySelector('#operator').value;
-      output.innerHTML = eval(`${firstNum} ${operator} ${secondNum}`);
+      try {
+        let firstNum = document.querySelector('#first-num').value;
+        let secondNum = document.querySelector('#second-num').value;
+        let operator = document.querySelector('#operator').value;
+
+        if(firstNum === '' || secondNum === '') {
+          throw new CalculationError("Enter both numbers", 400);
+        }
+        if(isNaN(firstNum) || isNaN(secondNum)) {
+          throw new CalculationError("Enter valid numbers", 401);
+        }
+        firstNum = Number(firstNum);
+        secondNum = Number(secondNum);
+        if(operator === '/' && secondNum === 0) {
+          throw new CalculationError("Division by zero is not allowed", 402);
+        }
+
+        let result;
+        switch(operator) {
+          case '+':
+            result = firstNum + secondNum;
+            break;
+          case '-':
+            result = firstNum - secondNum;
+            break;
+          case '*':
+            result = firstNum * secondNum;
+            break;
+          case '/':
+            result = firstNum / secondNum;
+            break;
+          default:
+            throw new CalculationError("Invalid operator", 403);
+        }
+        output.innerHTML = result;
+        console.log('Calculation successful:', `${firstNum} ${operator} ${secondNum} = ${result}`);
+      } catch(error) {
+        output.innerHTML = 'Error';
+        if(error instanceof CalculationError) {
+          error.logToServer();
+          console.warn('Calculator error:', error.message);
+          if(window.TrackJS) TrackJS.track(error);
+        } else {
+          console.error('Unexpected Error', error.message);
+        }
+      } finally {
+        console.log('Calculation attempt completed');
+      }
     });
 
     let errorBtns = Array.from(document.querySelectorAll('#error-btns > button'));
 
-    // Start your code here
-    // You may move this JS to another file if you wish
+    const sampleData = {
+      name: "June Doe",
+      age: 32,
+      occupation: "Developer",
+      skills: ["HTML", "CSS", "JavaScript"]
+    };
+    const sampleArray = [
+      {id: 1, name: "Alex", role:"Developer"},
+      {id: 2, name: "Otto", role:"Designer"},
+      {id: 3, name: "Terry", role:"Manager"}
+    ];
+
+    let timerName = "demoTimer";
+    let groupStarted = false;
+
+    errorBtns.forEach((btn) => {
+      const label = btn.textContent.trim();
+
+      switch(label) {
+        case "Console Log":
+          btn.addEventListener('click', () => {
+            console.log("Demonstration for console.log with example", sampleData);
+          });
+          break;
+        case "Console Error":
+          btn.addEventListener('click', () => {
+            const err = new Error("Console Error Button Demo");
+            console.error(err);
+            if(window.TrackJS) TrackJS.track(err);
+          });
+          break;
+        case "Console Count":
+          btn.addEventListener('click', ()=> {
+            console.count("Counter");
+          });
+          break;
+        case "Console Warn":
+          btn.addEventListener('click', () => {
+            console.warn("This is a warning message");
+            if(window.TrackJS) TrackJS.track("Warning: Demo warning");
+          });
+          break;
+        case "Console Assert":
+          btn.addEventListener('click', () => {
+            const output = document.querySelector("output").textContent;
+            console.assert(output === "", "Output is not empty");
+          });
+          break;
+        case "Console Clear":
+          btn.addEventListener('click', () => {
+            console.clear();
+          });
+          break;
+        case "Console Dir":
+          btn.addEventListener('click', () => {
+            console.dir(document.querySelector("form"));
+          });
+          break;
+        case "Console dirxml":
+          btn.addEventListener('click', () => {
+            console.dirxml(document.querySelector("form"));
+          });
+          break;
+        case "Console Group Start":
+          btn.addEventListener('click', () => {
+            if(!groupStarted) {
+              console.group("Grouped Logs");
+              console.log("Inside group: Name =", sampleData.name);
+              console.log("Inside group: Age =", sampleData.age);
+              groupStarted = true;
+            }
+          });
+          break;
+        case "Console Group End":
+          btn.addEventListener('click', () => {
+            if(groupStarted) {
+              console.groupEnd();
+              groupStarted = false;
+            }
+          });
+          break;
+        case "Console Table": 
+          btn.addEventListener('click', () => {
+            console.table(sampleArray);
+          });
+          break;
+        case "Start Timer":
+          btn.addEventListener('click', () => {
+            console.time(timerName);
+          });
+          break;
+        case "End Timer":
+          btn.addEventListener('click', () => {
+            console.timeEnd(timerName);
+          });
+          break;
+        case "Console Trace": 
+          btn.addEventListener('click', () => {
+            function traceDemo() {
+              const err = new Error("Trace Button Clicked - Stack Trace");
+              console.trace(err);
+              if(window.TrackJS) TrackJS.track(err);
+            }
+            traceDemo();
+          });
+          break;
+        case "Trigger a Global Error":
+          btn.addEventListener('click', () => {
+            undefinedFunction();
+          });
+          break;
+      }
+    });
+    function sendErrorToServer(errorData) {
+      console.log("Simulating error report to server:", errorData);
+    }
+    window.onerror = function(message, source, lineno, colno, error) {
+      console.error("Global error caught:", {
+        message,
+        source,
+        lineno,
+        colno,
+        error,
+      });
+      if(window.TrackJS) {
+        TrackJS.track(error || message);
+      }
+      return true;
+    };
+
+    window.addEventListener('unhandledrejection', event => {
+      console.error("Unhandled rejection:", event.reason);
+      if(window.TrackJS) {
+        TrackJS.track(event.reason);
+      }
+    });
+    
   </script>
 </body>
 
